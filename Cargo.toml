@@ -1,0 +1,7 @@
+[package]
+name = "satisfactory"
+version = "0.1.0"
+authors = ["Adam C. Foltzer <acfoltzer@gmail.com>"]
+
+[dependencies]
+petgraph = "0.4"
