@@ -1,4 +1,4 @@
-use petgraph::dot::{Config, Dot};
+use petgraph::dot::Dot;
 use petgraph::prelude::{Bfs, Direction, Graph, NodeIndex};
 use petgraph::visit::Reversed;
 use std::collections::HashMap;
@@ -8,23 +8,73 @@ type Rate = f64;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum Item {
+    AILimiter,
+    AlienCarapace,
     Any,
-    IronOre,
-    CopperOre,
-    IronIngot,
-    CopperIngot,
-    IronRod,
-    IronPlate,
-    Wire,
+    Biofuel,
+    Biomass,
     Cable,
+    CateriumIngot,
+    CateriumOre,
+    CircuitBoard,
+    Coal,
+    ColorCartridge,
+    Computer,
+    Concrete,
+    CopperIngot,
+    CopperOre,
+    CrudeOil,
+    EncasedIndustrialBeam,
+    Fabric,
+    Filter,
+    FlowerPetals,
+    Fuel,
+    GreenPowerSlug,
+    HeavyModularFrame,
+    HighSpeedConnector,
+    IronIngot,
+    IronOre,
+    IronPlate,
+    IronRod,
+    Leaves,
+    Limestone,
+    ModularFrame,
+    Motor,
+    Mycelia,
+    Plastic,
+    PowerShard,
+    PurplePowerSlug,
+    Quickwire,
+    ReinforcedIronPlate,
+    Rotor,
+    Rubber,
+    Screw,
+    SpikedRebar,
+    Stator,
+    SteelBeam,
+    SteelIngot,
+    SteelPipe,
+    Supercomputer,
+    Wire,
+    Wood,
+    YellowPowerSlug,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum Machine {
-    IronMinerMk1,
-    CopperMinerMk1,
-    Smelter,
+    Assembler,
+    CateriumMinerMk1,
+    CateriumMinerMk2,
     Constructor,
+    CopperMinerMk1,
+    CopperMinerMk2,
+    Foundry,
+    IronMinerMk1,
+    IronMinerMk2,
+    Manufacturer,
+    OilPump,
+    OilRefinery,
+    Smelter,
     Storage,
 }
 
@@ -52,10 +102,10 @@ impl PartialEq for Recipe {
 
 impl Hash for Recipe {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.inputs.iter().map(|i| {
+        for i in self.inputs.iter() {
             i.0.hash(state);
             (i.1 as usize).hash(state)
-        });
+        }
         self.machine.hash(state);
         self.output.hash(state);
         (self.output_rate as usize).hash(state);
@@ -78,12 +128,42 @@ fn recipes() -> Vec<Recipe> {
         recipe!(Storage[(Any, 900.0)] => (Any, 900.0)),
         recipe!(IronMinerMk1[] => (IronOre, 60.0)),
         recipe!(CopperMinerMk1[] => (CopperOre, 60.0)),
+        recipe!(CateriumMinerMk1[] => (CateriumOre, 60.0)),
+        recipe!(IronMinerMk2[] => (IronOre, 120.0)),
+        recipe!(CopperMinerMk2[] => (CopperOre, 120.0)),
+        recipe!(CateriumMinerMk2[] => (CateriumOre, 120.0)),
         recipe!(Smelter[(IronOre, 30.0)] => (IronIngot, 30.0)),
         recipe!(Smelter[(CopperOre, 30.0)] => (CopperIngot, 30.0)),
-        recipe!(Constructor[(IronIngot, 15.0)] => (IronRod, 15.0)),
+        recipe!(Smelter[(CateriumOre, 60.0)] => (CateriumIngot, 15.0)),
+        recipe!(Foundry[(Coal, 45.0), (IronOre, 45.0)] => (SteelIngot, 30.0)),
         recipe!(Constructor[(IronIngot, 30.0)] => (IronPlate, 15.0)),
+        recipe!(Constructor[(IronIngot, 15.0)] => (IronRod, 15.0)),
         recipe!(Constructor[(CopperIngot, 15.0)] => (Wire, 45.0)),
         recipe!(Constructor[(Wire, 30.0)] => (Cable, 15.0)),
+        recipe!(Constructor[(Leaves, 150.0)] => (Biomass, 90.0)),
+        recipe!(Constructor[(Limestone, 45.0)] => (Concrete, 15.0)),
+        recipe!(Constructor[(IronRod, 15.0)] => (Screw, 90.0)),
+        recipe!(Constructor[(Wood, 75.0)] => (Biomass, 375.0)),
+        recipe!(Constructor[(GreenPowerSlug, 6.0)] => (PowerShard, 6.0)),
+        recipe!(Constructor[(Biomass, 60.0)] => (Biofuel, 30.0)),
+        recipe!(Constructor[(SteelIngot, 30.0)] => (SteelBeam, 10.0)),
+        recipe!(Constructor[(SteelIngot, 15.0)] => (SteelPipe, 15.0)),
+        recipe!(Constructor[(Mycelia, 150.0)] => (Biomass, 150.0)),
+        recipe!(Constructor[(FlowerPetals, 37.5)] => (ColorCartridge, 75.0)),
+        recipe!(Constructor[(IronRod, 15.0)] => (SpikedRebar, 15.0)),
+        recipe!(Constructor[(AlienCarapace, 15.0)] => (Biomass, 1500.0)),
+        recipe!(Constructor[(YellowPowerSlug, 4.0)] => (PowerShard, 8.0)),
+        recipe!(Constructor[(CateriumIngot, 15.0)] => (Quickwire, 60.0)),
+        recipe!(Constructor[(PurplePowerSlug, 3.0)] => (PowerShard, 15.0)),
+        recipe!(Assembler[(IronPlate, 20.0), (Screw, 120.0)] => (ReinforcedIronPlate, 5.0)),
+        recipe!(Assembler[(IronRod, 18.0), (Screw, 132.0)] => (Rotor, 6.0)),
+        recipe!(Assembler[(ReinforcedIronPlate, 12.0), (IronRod, 24.0)] => (ModularFrame, 4.0)),
+        recipe!(Assembler[(SteelBeam, 16.0), (Concrete, 20.0)] => (EncasedIndustrialBeam, 4.0)),
+        recipe!(Assembler[(SteelPipe, 18.0), (Wire, 60.0)] => (Stator, 6.0)),
+        recipe!(Assembler[(Rotor, 10.0), (Stator, 10.0)] => (Motor, 5.0)),
+        recipe!(Assembler[(Mycelia, 15.0), (Leaves, 30.0)] => (Fabric, 15.0)),
+        recipe!(Assembler[(Wire, 60.0), (Plastic, 30.0)] => (CircuitBoard, 5.0)),
+        recipe!(Assembler[(CircuitBoard, 5.0), (Quickwire, 90.0)] => (AILimiter, 5.0)),
     ]
 }
 
@@ -200,10 +280,10 @@ fn legalize(spec: &mut Graph<Recipe, (Item, Rate)>) {
 
 fn main() {
     let desired_outputs = &[
-        /*         (Item::IronRod, 60.0),
-                (Item::IronPlate, 60.0), */
-        /*         (Item::Wire, 90.0), */
-        (Item::Cable, 30.0),
+        (Item::IronRod, 60.0),
+        (Item::IronPlate, 60.0),
+        (Item::Wire, 90.0),
+        (Item::Cable, 45.0),
     ];
     let mut spec = recipes_to_make(desired_outputs);
     legalize(&mut spec);
@@ -216,23 +296,6 @@ fn main() {
 }
 
 fn verify_spec(spec: &Graph<Recipe, (Item, Rate)>) {
-    fn outputs_at(spec: &Graph<Recipe, (Item, Rate)>, node: NodeIndex<u32>) -> (Item, Rate) {
-        assert!(spec[node].machine != Machine::Storage);
-        let mut inputs = spec.neighbors_directed(node, Direction::Incoming).detach();
-        let mut rate = 1.0;
-        while let Some((in_e, in_n)) = inputs.next(spec) {
-            let effective_rate = spec[in_e].1 / spec[in_n].output_rate;
-            assert!(rate == 1.0 || rate == effective_rate);
-            rate = effective_rate;
-
-            let (oi, or) = outputs_at(spec, in_n);
-            let (ei, er) = spec[in_e];
-            assert_eq!(oi, ei);
-            assert!(or >= er);
-        }
-        (spec[node].output, spec[node].output_rate * rate)
-    }
-
     for out in spec
         .externals(Direction::Incoming)
         .collect::<Vec<NodeIndex<u32>>>()
